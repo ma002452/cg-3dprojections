@@ -71,6 +71,18 @@ class Renderer {
         //     * project to 2D
         //     * translate/scale to viewport (i.e. window)
         //     * draw line
+        for (const model of this.scene.models) {
+            model.vertices.forEach((vertex, i) => {
+                model.vertices[i] = Matrix.multiply([mat4x4Perspective(scene.view.prp, scene.view.srp, scene.view.vup, scene.view.clip), vertex]);
+            });
+            const z_min = 0; // TODO: define z_min
+            for (const edge of model.edges) {
+                const clippedLine = this.clipLinePerspective(edge, z_min);
+                // project to 2D
+                // translate/scale to viewport
+                // draw
+            }
+        }
     }
 
     // Get outcode for a vertex
