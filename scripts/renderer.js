@@ -111,8 +111,54 @@ class Renderer {
         let out1 = this.outcodePerspective(p1, z_min);
         
         // TODO: implement clipping here!
-        
-        return result;
+        if ((out0 | out1) == 0) {
+            // Trivial accept
+            return line;
+        } else if ((out0 & out1) != 0) {
+            // Trivial reject
+            return null;
+        } else {
+            if (out0 != 0) {
+                // Find intersection of p0 and edge
+                result = { pt0: this.getEdgeIntersection(p0, p1, z_min), pt1: line.pt1 };
+            } else {
+                // Find intersection of p1 and edge
+                result = { pt0: line.pt0, pt1: this.getEdgeIntersection(p1, p0, z_min) };
+            }
+            return this.clipLinePerspective(result, z_min);
+        }
+    }
+
+    getEdgeIntersection(ptOut, ptIn, z_min) {
+        let dx = ptOut.x - ptIn.x;
+        let dy = ptOut.y - ptIn.y;
+        let dz = ptOut.z - ptIn.z;
+        let t;
+        if (ptOut.x < (ptOut.z - FLOAT_EPSILON)) {
+            // Left
+            t = (-ptIn.x + ptIn.z) / (dx - dz);
+        }
+        else if (ptOut.x > (-ptOut.z + FLOAT_EPSILON)) {
+            // Right
+            t = -(-ptIn.x + ptIn.z) / (-dx - dz);
+        }
+        else if (ptOut.y < (ptOut.z - FLOAT_EPSILON)) {
+            // Bottom
+            t = (-ptIn.y + ptIn.z) / (dy - dz);
+        }
+        else if (ptOut.y > (-ptOut.z + FLOAT_EPSILON)) {
+            // Top
+            t = (ptIn.y + ptIn.z) / (-dy - dz);
+        }
+        else if (ptOut.z < (-1.0 - FLOAT_EPSILON)) {
+            // Far
+            t = (-ptIn.z - 1) / dz
+        }
+        else if (ptOut.z > (z_min + FLOAT_EPSILON)) {
+            // Near
+            t = (ptIn.z - z_min) / -dz
+        }
+        return new Vector4(ptIn.x + t * dx, ptIn.y + t * dy, ptIn.z + t * dz, 1);
     }
 
     //
