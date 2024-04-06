@@ -4,59 +4,47 @@ import { Matrix, Vector } from "./matrix.js";
 function mat4x4Perspective(prp, srp, vup, clip) {
     // 1. translate PRP to origin
     let matTranslate = new Matrix(4, 4);
-    matTranslate = [[1, 0, 0, -prp.x],
-                    [0, 1, 0, -prp.y],
-                    [0, 0, 1, -prp.z],
-                    [0, 0, 0,      1]];
+    matTranslate.values = [[1, 0, 0, -prp.x],
+                           [0, 1, 0, -prp.y],
+                           [0, 0, 1, -prp.z],
+                           [0, 0, 0,      1]];
 
     // 2. rotate VRC such that (u,v,n) align with (x,y,z)
-    let n = new Vector(3);
-    n = prp.Vector.subtract(srp);
-    n = n.Vector.normalize();
-
-    let u = new Vector(3);
-    u = vup.Vector.cross(n);
-    u = u.Vector.normalize();
-
-    let v = new Vector(3);
-    v = n.Vector.cross(u);
-    
+    let n = (prp.Vector.subtract(srp)).Vector.normalize();
+    let u = (vup.Vector.cross(n)).Vector.normalize();
+    let v = n.Vector.cross(u);
     let matRotate = new Matrix(4, 4);
-    matRotate = [[u.x, u.y, u.z, 0],
-                 [v.x, v.y, v.z, 0],
-                 [n.x, n.y, n.z, 0],
-                 [  0,   0,   0, 1]];
+    matRotate.values = [[u.x, u.y, u.z, 0],
+                        [v.x, v.y, v.z, 0],
+                        [n.x, n.y, n.z, 0],
+                        [  0,   0,   0, 1]];
 
     // 3. shear such that CW is on the z-axis
     let cw = new Vector(3);
-    cw.x = (clip[0] + clip[1]) / 2;
-    cw.y = (clip[2] + clip[3]) / 2;
-    cw.z = -clip[4];
-
+    cw.values = [(clip[0] + clip[1]) / 2, (clip[2] + clip[3]) / 2, -clip[4]];
     let dop = cw;
 
-    let shxpar = -dop.x/dop.z;
-    let shypar = -dop.y/dop.z;
+    let shxpar = -dop[0]/dop[2];
+    let shypar = -dop[1]/dop[2];
     let shpar = new Matrix(4, 4);
-    shpar = [[1, 0, shxpar, 0],
-             [0, 1, shypar, 0],
-             [0, 0,      1, 0],
-             [0, 0,      0, 1]];
+    shpar.values = [[1, 0, shxpar, 0],
+                    [0, 1, shypar, 0],
+                    [0, 0,      1, 0],
+                    [0, 0,      0, 1]];
 
     // 4. scale such that view volume bounds are ([z,-z], [z,-z], [-1,zmin])
     let sperx = (2 * clip[4]) / ((clip[1] - clip[0]) * clip[5]);
     let spery = (2 * clip[4]) / ((clip[3] - clip[2]) * clip[5]);
     let sperz = 1/clip[5];
     let sper = new Matrix(4, 4);
-    sper = [[sperx,     0,     0, 0],
-            [    0, spery,     0, 0],
-            [    0,     0, sperz, 0],
-            [    0,     0,     0, 1]];
+    sper.values = [[sperx,     0,     0, 0],
+                   [    0, spery,     0, 0],
+                   [    0,     0, sperz, 0],
+                   [    0,     0,     0, 1]];
 
     // ...
     // let transform = Matrix.multiply([...]);
-    let transform = new Matrix(4, 4);
-    transform = Matrix.multiply(sper, shpar, matRotate, matTranslate);
+    let transform = Matrix.multiply(sper, shpar, matRotate, matTranslate);
 
     // return transform;
     return transform;
