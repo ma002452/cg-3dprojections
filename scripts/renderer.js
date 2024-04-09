@@ -78,7 +78,14 @@ class Renderer {
             const z_min = 0; // TODO: define z_min
             for (const edge of model.edges) {
                 const clippedLine = this.clipLinePerspective(edge, z_min);
+                
                 // project to 2D
+                let mper = CG.mat4x4MPer;
+                let nper = CG.mat4x4Perspective(this.scene.view.prp, this.scene.view.srp, this.scene.view.vup, this.scene.view.clip);
+                let mnper = mper.multiply(nper);
+                for (let i=0; )
+                let transformedVertices = model.vertices[i]
+
                 // translate/scale to viewport
                 // draw
             }
