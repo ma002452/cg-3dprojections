@@ -10,9 +10,11 @@ function mat4x4Perspective(prp, srp, vup, clip) {
                            [0, 0, 0,      1]];
 
     // 2. rotate VRC such that (u,v,n) align with (x,y,z)
-    let n = (prp.Vector.subtract(srp)).Vector.normalize();
-    let u = (vup.Vector.cross(n)).Vector.normalize();
-    let v = n.Vector.cross(u);
+    let n = prp.subtract(srp);
+    n.normalize();
+    let u = vup.cross(n);
+    u.normalize();
+    let v = n.cross(u);
     let matRotate = new Matrix(4, 4);
     matRotate.values = [[u.x, u.y, u.z, 0],
                         [v.x, v.y, v.z, 0],
