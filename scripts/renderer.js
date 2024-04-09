@@ -72,21 +72,28 @@ class Renderer {
         //     * translate/scale to viewport (i.e. window)
         //     * draw line
         for (const model of this.scene.models) {
+            const canonicalVertices = [];
             model.vertices.forEach((vertex, i) => {
-                model.vertices[i] = Matrix.multiply([mat4x4Perspective(scene.view.prp, scene.view.srp, scene.view.vup, scene.view.clip), vertex]);
+                canonicalVertices[i] = Matrix.multiply([CG.mat4x4Perspective(this.scene.view.prp, this.scene.view.srp, this.scene.view.vup, this.scene.view.clip), vertex]);
             });
             const z_min = 0; // TODO: define z_min
             for (const edge of model.edges) {
-                const clippedLine = this.clipLinePerspective(edge, z_min);
+                for (let i = 0; i < edge.length - 1; i++) {
+                    const v0 = canonicalVertices[edge[i]];
+                    const v1 = canonicalVertices[edge[i+1]];
+                    const line = {
+                        pt0: CG.Vector4(v0.x, v0.y, v0.z, 1),
+                        pt1: CG.Vector4(v1.x, v1.y, v1.z, 1)
+                    };
+                    const clippedLine = this.clipLinePerspective(line, z_min);
 
-                // project to 2D
-                let mper = CG.mat4x4MPer;
-                let nper = CG.mat4x4Perspective(this.scene.view.prp, this.scene.view.srp, this.scene.view.vup, this.scene.view.clip);
-                let mnper = mper.multiply(nper);
-                let transformedVertices = model.vertices[i]
-
-                // translate/scale to viewport
-                // draw
+                    // project to 2D (WIP)
+                    let mper = CG.mat4x4MPer();
+                    let mnper = Matrix.multiply([mper, clippedLine]);
+                    
+                    // translate/scale to viewport
+                    // draw
+                }
             }
         }
     }
@@ -123,8 +130,8 @@ class Renderer {
     // z_min:        float (near clipping plane in canonical view volume)
     clipLinePerspective(line, z_min) {
         let result = null;
-        let p0 = Vector3(line.pt0.x, line.pt0.y, line.pt0.z); 
-        let p1 = Vector3(line.pt1.x, line.pt1.y, line.pt1.z);
+        let p0 = CG.Vector3(line.pt0.x, line.pt0.y, line.pt0.z); 
+        let p1 = CG.Vector3(line.pt1.x, line.pt1.y, line.pt1.z);
         let out0 = this.outcodePerspective(p0, z_min);
         let out1 = this.outcodePerspective(p1, z_min);
         
