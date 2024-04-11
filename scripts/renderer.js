@@ -85,14 +85,22 @@ class Renderer {
                         pt0: CG.Vector4(v0.x, v0.y, v0.z, 1),
                         pt1: CG.Vector4(v1.x, v1.y, v1.z, 1)
                     };
-                    const clippedLine = this.clipLinePerspective(line, z_min);
+                    //const clippedLine = this.clipLinePerspective(line, z_min);
 
-                    // project to 2D (WIP)
+                    // project to 2D
                     let mper = CG.mat4x4MPer();
-                    let mnper = Matrix.multiply([mper, clippedLine]);
-                    
+                    //let pt0_viewV = Matrix.multiply([mper, clippedLine.pt0]);
+                    //let pt1_viewV = Matrix.multiply([mper, clippedLine.pt1]);
+                    let pt0_viewV = Matrix.multiply([mper, line.pt0]);
+                    let pt1_viewV = Matrix.multiply([mper, line.pt1]);
+
                     // translate/scale to viewport
+                    let viewport = CG.mat4x4Viewport(this.canvas.width, this.canvas.height);
+                    let pt0_screen = Matrix.multiply([viewport, pt0_viewV]);
+                    let pt1_screen = Matrix.multiply([viewport, pt1_viewV]);
+                    
                     // draw
+                    this.drawLine(pt0_screen.x, pt0_screen.y, pt1_screen.x, pt1_screen.y);
                 }
             }
         }
