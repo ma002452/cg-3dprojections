@@ -26,8 +26,8 @@ function mat4x4Perspective(prp, srp, vup, clip) {
     cw.values = [(clip[0] + clip[1]) / 2, (clip[2] + clip[3]) / 2, -clip[4]];
     let dop = cw;
 
-    let shxpar = -dop[0]/dop[2];
-    let shypar = -dop[1]/dop[2];
+    let shxpar = -dop.x/dop.z;
+    let shypar = -dop.y/dop.z;
     let shpar = new Matrix(4, 4);
     shpar.values = [[1, 0, shxpar, 0],
                     [0, 1, shypar, 0],

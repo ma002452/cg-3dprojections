@@ -30,7 +30,37 @@ class Renderer {
 
     //
     rotateLeft() {
+    // translate PRP to origin
+    let matTranslate = new Matrix(4, 4);
+    matTranslate.values = [[1, 0, 0, -this.scene.view.prp.x],
+                           [0, 1, 0, -this.scene.view.prp.y],
+                           [0, 0, 1, -this.scene.view.prp.z],
+                           [0, 0, 0,                      1]];
 
+    // rotate VRC such that (u,v,n) align with (x,y,z)
+    let n = this.scene.view.prp.subtract(this.scene.view.srp);
+    n.normalize();
+    let u = this.scene.view.vup.cross(n);
+    u.normalize();
+    let v = n.cross(u);
+    let matRotate = new Matrix(4, 4);
+    matRotate.values = [[u.x, u.y, u.z, 0],
+                        [v.x, v.y, v.z, 0],
+                        [n.x, n.y, n.z, 0],
+                        [  0,   0,   0, 1]];
+
+    // rotation matrix around the v-axis with the PRP as the origin
+    let matRotateV = new Matrix(4, 4);
+    CG.mat4x4RotateY(matRotateV, 15);
+
+    // go back to the original location
+    let matRotate_inv = matRotate.inverse();
+    let matTranslate_inv = matTranslate.inverse();
+
+    // put all together
+    let matRotateLeft = Matrix.multiply([matTranslate_inv, matRotate_inv, matRotateV, matRotate, matTranslate]);
+
+    // modify vertices and edges
     }
     
     //
@@ -73,10 +103,13 @@ class Renderer {
         //     * draw line
         for (const model of this.scene.models) {
             const canonicalVertices = [];
+            //console.log(model.vertices);
+            //console.log(model);
             model.vertices.forEach((vertex, i) => {
                 canonicalVertices[i] = Matrix.multiply([CG.mat4x4Perspective(this.scene.view.prp, this.scene.view.srp, this.scene.view.vup, this.scene.view.clip), vertex]);
             });
-            const z_min = 0; // TODO: define z_min
+            //console.log(canonicalVertices);
+            const z_min = -this.scene.view.clip[4]/this.scene.view.clip[5]; // TODO: define z_min
             for (const edge of model.edges) {
                 for (let i = 0; i < edge.length - 1; i++) {
                     const v0 = canonicalVertices[edge[i]];
@@ -85,22 +118,29 @@ class Renderer {
                         pt0: CG.Vector4(v0.x, v0.y, v0.z, 1),
                         pt1: CG.Vector4(v1.x, v1.y, v1.z, 1)
                     };
-                    //const clippedLine = this.clipLinePerspective(line, z_min);
+                    //console.log(line);
+                    const clippedLine = this.clipLinePerspective(line, z_min);
 
                     // project to 2D
                     let mper = CG.mat4x4MPer();
-                    //let pt0_viewV = Matrix.multiply([mper, clippedLine.pt0]);
-                    //let pt1_viewV = Matrix.multiply([mper, clippedLine.pt1]);
-                    let pt0_viewV = Matrix.multiply([mper, line.pt0]);
-                    let pt1_viewV = Matrix.multiply([mper, line.pt1]);
+                    let pt0_ViewVolume = Matrix.multiply([mper, clippedLine.pt0]);
+                    let pt1_ViewVolume = Matrix.multiply([mper, clippedLine.pt1]);
 
                     // translate/scale to viewport
                     let viewport = CG.mat4x4Viewport(this.canvas.width, this.canvas.height);
-                    let pt0_screen = Matrix.multiply([viewport, pt0_viewV]);
-                    let pt1_screen = Matrix.multiply([viewport, pt1_viewV]);
+                    let pt0_viewport = Matrix.multiply([viewport, pt0_ViewVolume]);
+                    let pt1_viewport = Matrix.multiply([viewport, pt1_ViewVolume]);
+                    
+                    // homogeneous coordinates -> cartesian coordinates
+                    pt0_viewport.x = pt0_viewport.x / pt0_viewport.w;
+                    pt0_viewport.y = pt0_viewport.y / pt0_viewport.w;
+                    pt0_viewport.z = pt0_viewport.z / pt0_viewport.w;
+                    pt1_viewport.x = pt1_viewport.x / pt1_viewport.w;
+                    pt1_viewport.y = pt1_viewport.y / pt1_viewport.w;
+                    pt1_viewport.z = pt1_viewport.z / pt1_viewport.w;
                     
                     // draw
-                    this.drawLine(pt0_screen.x, pt0_screen.y, pt1_screen.x, pt1_screen.y);
+                    this.drawLine(pt0_viewport.x, pt0_viewport.y, pt1_viewport.x, pt1_viewport.y);
                 }
             }
         }
@@ -257,7 +297,7 @@ class Renderer {
                 }
             }
             else {
-                model.center = Vector4(scene.models[i].center[0],
+                model.center = CG.Vector4(scene.models[i].center[0],
                                        scene.models[i].center[1],
                                        scene.models[i].center[2],
                                        1);
