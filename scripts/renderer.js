@@ -126,22 +126,42 @@ class Renderer {
     
     //
     moveLeft() {
-        
+        let n = this.scene.view.prp.subtract(this.scene.view.srp);
+        n.normalize();
+        const u = this.scene.view.vup.cross(n);
+        u.normalize();
+        this.scene.view.prp = this.scene.view.prp.subtract(u);
+        this.scene.view.srp = this.scene.view.srp.subtract(u);
+        this.draw();
     }
     
     //
     moveRight() {
-
+        let n = this.scene.view.prp.subtract(this.scene.view.srp);
+        n.normalize();
+        const u = this.scene.view.vup.cross(n);
+        u.normalize();
+        this.scene.view.prp = this.scene.view.prp.add(u);
+        this.scene.view.srp = this.scene.view.srp.add(u);
+        this.draw();
     }
     
     //
     moveBackward() {
-
+        let n = this.scene.view.prp.subtract(this.scene.view.srp);
+        n.normalize();
+        this.scene.view.prp = this.scene.view.prp.add(n);
+        this.scene.view.srp = this.scene.view.srp.add(n);
+        this.draw();
     }
     
     //
     moveForward() {
-
+        let n = this.scene.view.prp.subtract(this.scene.view.srp);
+        n.normalize();
+        this.scene.view.prp = this.scene.view.prp.subtract(n);
+        this.scene.view.srp = this.scene.view.srp.subtract(n);
+        this.draw();
     }
 
     //
