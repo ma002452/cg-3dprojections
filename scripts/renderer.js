@@ -373,16 +373,32 @@ class Renderer {
                         model.animation = JSON.parse(JSON.stringify(scene.models[i].animation));
                     }
                 }
-            }
-            /*
-            else if (model.type === 'cube') {
-                model.vertices = [];
-                for (let i=0; i<8; i++) {
-                    model.vertices[i].push(CG.Vector4());
-                }
-
-            }*/
-            else {
+            } else if (model.type === 'cube') {
+                const leftFaceX = scene.models[i].center[0] - scene.models[i].width / 2;
+                const rightFaceX = scene.models[i].center[0] + scene.models[i].width / 2;
+                const bottomFaceY = scene.models[i].center[1] - scene.models[i].height / 2;
+                const topFaceY = scene.models[i].center[1] + scene.models[i].height / 2;
+                const backFaceZ = scene.models[i].center[2] - scene.models[i].depth / 2;
+                const frontFaceZ = scene.models[i].center[2] + scene.models[i].depth / 2;
+                model.vertices = [
+                    CG.Vector4(rightFaceX, topFaceY, backFaceZ, 1),
+                    CG.Vector4(leftFaceX, topFaceY, backFaceZ, 1),
+                    CG.Vector4(leftFaceX, bottomFaceY, backFaceZ, 1),
+                    CG.Vector4(rightFaceX, bottomFaceY, backFaceZ, 1),
+                    CG.Vector4(rightFaceX, topFaceY, frontFaceZ, 1),
+                    CG.Vector4(leftFaceX, topFaceY, frontFaceZ, 1),
+                    CG.Vector4(leftFaceX, bottomFaceY, frontFaceZ, 1),
+                    CG.Vector4(rightFaceX, bottomFaceY, frontFaceZ, 1)
+                ];
+                model.edges = [
+                    [0, 1, 2, 3, 0], // back face
+                    [4, 5, 6, 7, 4], // front face
+                    [0, 4],          // connecting edges (side faces)
+                    [1, 5],
+                    [2, 6],
+                    [3, 7],
+                ];
+            } else {
                 model.center = CG.Vector4(scene.models[i].center[0],
                                        scene.models[i].center[1],
                                        scene.models[i].center[2],
