@@ -82,7 +82,7 @@ class Renderer {
     
     //
     moveLeft() {
-
+        
     }
     
     //
@@ -243,7 +243,11 @@ class Renderer {
             // Near
             t = (ptIn.z - z_min) / -dz
         }
+<<<<<<< HEAD
         return CG.Vector4(ptIn.x + t * dx, ptIn.y + t * dy, ptIn.z + t * dz, 1);
+=======
+        return new CG.Vector4(ptIn.x + t * dx, ptIn.y + t * dy, ptIn.z + t * dz, 1);
+>>>>>>> a1c70a09885e1777bae031779b751dc3cf8548fb
     }
 
     //
