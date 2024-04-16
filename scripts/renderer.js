@@ -21,6 +21,7 @@ class Renderer {
         this.enable_animation = false;  // <-- disabled for easier debugging; enable for animation
         this.start_time = null;
         this.prev_time = null;
+        this.theta_rotateLeft = 15;
     }
 
     //
@@ -51,7 +52,8 @@ class Renderer {
 
     // rotation matrix around the v-axis with the PRP as the origin
     let matRotateV = new Matrix(4, 4);
-    CG.mat4x4RotateY(matRotateV, 15);
+    CG.mat4x4RotateY(matRotateV, this.theta_rotateLeft);
+    this.theta_rotateLeft += 15;
 
     // go back to the original location
     let matRotate_inv = matRotate.inverse();
@@ -60,7 +62,17 @@ class Renderer {
     // put all together
     let matRotateLeft = Matrix.multiply([matTranslate_inv, matRotate_inv, matRotateV, matRotate, matTranslate]);
 
-    // modify vertices and edges
+    // cartesian srp -> homogeneous srp
+    let homo_srp = CG.Vector4(this.scene.view.srp.x, this.scene.view.srp.y, this.scene.view.srp.z, 1);
+
+    // rotate srp
+    let rotate_srp = Matrix.multiply([matRotateLeft, homo_srp]);
+    
+    // homogeneous srp -> cartesian srp
+    this.scene.view.srp.x = rotate_srp.x / rotate_srp.w;
+    this.scene.view.srp.y = rotate_srp.y / rotate_srp.w;
+    this.scene.view.srp.z = rotate_srp.z / rotate_srp.w;
+    console.log(this.scene.view.srp);
     }
     
     //
@@ -213,7 +225,7 @@ class Renderer {
         }
         else if (ptOut.x > (-ptOut.z + FLOAT_EPSILON)) {
             // Right
-            t = -(-ptIn.x + ptIn.z) / (-dx - dz);
+            t = (ptIn.x + ptIn.z) / (-dx - dz);
         }
         else if (ptOut.y < (ptOut.z - FLOAT_EPSILON)) {
             // Bottom
@@ -231,7 +243,7 @@ class Renderer {
             // Near
             t = (ptIn.z - z_min) / -dz
         }
-        return new Vector4(ptIn.x + t * dx, ptIn.y + t * dy, ptIn.z + t * dz, 1);
+        return CG.Vector4(ptIn.x + t * dx, ptIn.y + t * dy, ptIn.z + t * dz, 1);
     }
 
     //
@@ -296,6 +308,14 @@ class Renderer {
                     }
                 }
             }
+            /*
+            else if (model.type === 'cube') {
+                model.vertices = [];
+                for (let i=0; i<8; i++) {
+                    model.vertices[i].push(CG.Vector4());
+                }
+
+            }*/
             else {
                 model.center = CG.Vector4(scene.models[i].center[0],
                                        scene.models[i].center[1],
