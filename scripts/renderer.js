@@ -70,7 +70,7 @@ class Renderer {
     
     //
     moveLeft() {
-
+        
     }
     
     //
@@ -213,7 +213,7 @@ class Renderer {
         }
         else if (ptOut.x > (-ptOut.z + FLOAT_EPSILON)) {
             // Right
-            t = -(-ptIn.x + ptIn.z) / (-dx - dz);
+            t = (ptIn.x + ptIn.z) / (-dx - dz);
         }
         else if (ptOut.y < (ptOut.z - FLOAT_EPSILON)) {
             // Bottom
@@ -231,7 +231,7 @@ class Renderer {
             // Near
             t = (ptIn.z - z_min) / -dz
         }
-        return new Vector4(ptIn.x + t * dx, ptIn.y + t * dy, ptIn.z + t * dz, 1);
+        return new CG.Vector4(ptIn.x + t * dx, ptIn.y + t * dy, ptIn.z + t * dz, 1);
     }
 
     //
