@@ -21,7 +21,6 @@ class Renderer {
         this.enable_animation = false;  // <-- disabled for easier debugging; enable for animation
         this.start_time = null;
         this.prev_time = null;
-        this.theta_rotateLeft = 15;
     }
 
     //
@@ -52,8 +51,7 @@ class Renderer {
 
     // rotation matrix around the v-axis with the PRP as the origin
     let matRotateV = new Matrix(4, 4);
-    CG.mat4x4RotateY(matRotateV, this.theta_rotateLeft);
-    this.theta_rotateLeft += 15;
+    CG.mat4x4RotateY(matRotateV, 15*Math.PI/180);
 
     // go back to the original location
     let matRotate_inv = matRotate.inverse();
@@ -67,17 +65,63 @@ class Renderer {
 
     // rotate srp
     let rotate_srp = Matrix.multiply([matRotateLeft, homo_srp]);
+    console.log(rotate_srp);
     
     // homogeneous srp -> cartesian srp
     this.scene.view.srp.x = rotate_srp.x / rotate_srp.w;
     this.scene.view.srp.y = rotate_srp.y / rotate_srp.w;
     this.scene.view.srp.z = rotate_srp.z / rotate_srp.w;
     console.log(this.scene.view.srp);
+
+    this.draw();
     }
     
     //
     rotateRight() {
+    // translate PRP to origin
+    let matTranslate = new Matrix(4, 4);
+    matTranslate.values = [[1, 0, 0, -this.scene.view.prp.x],
+                           [0, 1, 0, -this.scene.view.prp.y],
+                           [0, 0, 1, -this.scene.view.prp.z],
+                           [0, 0, 0,                      1]];
 
+    // rotate VRC such that (u,v,n) align with (x,y,z)
+    let n = this.scene.view.prp.subtract(this.scene.view.srp);
+    n.normalize();
+    let u = this.scene.view.vup.cross(n);
+    u.normalize();
+    let v = n.cross(u);
+    let matRotate = new Matrix(4, 4);
+    matRotate.values = [[u.x, u.y, u.z, 0],
+                        [v.x, v.y, v.z, 0],
+                        [n.x, n.y, n.z, 0],
+                        [  0,   0,   0, 1]];
+
+    // rotation matrix around the v-axis with the PRP as the origin
+    let matRotateV = new Matrix(4, 4);
+    CG.mat4x4RotateY(matRotateV, -15*Math.PI/180);
+
+    // go back to the original location
+    let matRotate_inv = matRotate.inverse();
+    let matTranslate_inv = matTranslate.inverse();
+
+    // put all together
+    let matRotateLeft = Matrix.multiply([matTranslate_inv, matRotate_inv, matRotateV, matRotate, matTranslate]);
+
+    // cartesian srp -> homogeneous srp
+    let homo_srp = CG.Vector4(this.scene.view.srp.x, this.scene.view.srp.y, this.scene.view.srp.z, 1);
+
+    // rotate srp
+    let rotate_srp = Matrix.multiply([matRotateLeft, homo_srp]);
+    console.log(rotate_srp);
+    
+    // homogeneous srp -> cartesian srp
+    this.scene.view.srp.x = rotate_srp.x / rotate_srp.w;
+    this.scene.view.srp.y = rotate_srp.y / rotate_srp.w;
+    this.scene.view.srp.z = rotate_srp.z / rotate_srp.w;
+    console.log(this.scene.view.srp);
+
+    this.draw();
     }
     
     //
@@ -133,26 +177,28 @@ class Renderer {
                     //console.log(line);
                     const clippedLine = this.clipLinePerspective(line, z_min);
 
-                    // project to 2D
-                    let mper = CG.mat4x4MPer();
-                    let pt0_ViewVolume = Matrix.multiply([mper, clippedLine.pt0]);
-                    let pt1_ViewVolume = Matrix.multiply([mper, clippedLine.pt1]);
+                    if (clippedLine != null) {
+                        // project to 2D
+                        let mper = CG.mat4x4MPer();
+                        let pt0_ViewVolume = Matrix.multiply([mper, clippedLine.pt0]);
+                        let pt1_ViewVolume = Matrix.multiply([mper, clippedLine.pt1]);
 
-                    // translate/scale to viewport
-                    let viewport = CG.mat4x4Viewport(this.canvas.width, this.canvas.height);
-                    let pt0_viewport = Matrix.multiply([viewport, pt0_ViewVolume]);
-                    let pt1_viewport = Matrix.multiply([viewport, pt1_ViewVolume]);
-                    
-                    // homogeneous coordinates -> cartesian coordinates
-                    pt0_viewport.x = pt0_viewport.x / pt0_viewport.w;
-                    pt0_viewport.y = pt0_viewport.y / pt0_viewport.w;
-                    pt0_viewport.z = pt0_viewport.z / pt0_viewport.w;
-                    pt1_viewport.x = pt1_viewport.x / pt1_viewport.w;
-                    pt1_viewport.y = pt1_viewport.y / pt1_viewport.w;
-                    pt1_viewport.z = pt1_viewport.z / pt1_viewport.w;
-                    
-                    // draw
-                    this.drawLine(pt0_viewport.x, pt0_viewport.y, pt1_viewport.x, pt1_viewport.y);
+                        // translate/scale to viewport
+                        let viewport = CG.mat4x4Viewport(this.canvas.width, this.canvas.height);
+                        let pt0_viewport = Matrix.multiply([viewport, pt0_ViewVolume]);
+                        let pt1_viewport = Matrix.multiply([viewport, pt1_ViewVolume]);
+                        
+                        // homogeneous coordinates -> cartesian coordinates
+                        pt0_viewport.x = pt0_viewport.x / pt0_viewport.w;
+                        pt0_viewport.y = pt0_viewport.y / pt0_viewport.w;
+                        pt0_viewport.z = pt0_viewport.z / pt0_viewport.w;
+                        pt1_viewport.x = pt1_viewport.x / pt1_viewport.w;
+                        pt1_viewport.y = pt1_viewport.y / pt1_viewport.w;
+                        pt1_viewport.z = pt1_viewport.z / pt1_viewport.w;
+                        
+                        // draw
+                        this.drawLine(pt0_viewport.x, pt0_viewport.y, pt1_viewport.x, pt1_viewport.y);
+                    }
                 }
             }
         }
@@ -243,11 +289,7 @@ class Renderer {
             // Near
             t = (ptIn.z - z_min) / -dz
         }
-<<<<<<< HEAD
         return CG.Vector4(ptIn.x + t * dx, ptIn.y + t * dy, ptIn.z + t * dz, 1);
-=======
-        return new CG.Vector4(ptIn.x + t * dx, ptIn.y + t * dy, ptIn.z + t * dz, 1);
->>>>>>> a1c70a09885e1777bae031779b751dc3cf8548fb
     }
 
     //
