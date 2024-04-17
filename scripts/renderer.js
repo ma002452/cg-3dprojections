@@ -25,43 +25,33 @@ class Renderer {
 
     //
     updateTransforms(time, delta_time) {
-        // TODO: update any transformations needed for animation
-        
         for (let i = 0; i < this.scene.models.length; i++) {
-            let model = { type: this.scene.models[i].type };
-            if (model.type === 'generic') {
-                // translate PRP to origin
+            const model = this.scene.models[i];
+            if (model.animation) {
+                // translate model center to origin
                 let matTranslate = new Matrix(4, 4);
-                matTranslate.values = [[1, 0, 0, -this.scene.view.prp.x],
-                                       [0, 1, 0, -this.scene.view.prp.y],
-                                       [0, 0, 1, -this.scene.view.prp.z],
-                                       [0, 0, 0,                      1]];
-                                       
-                // rotate about x-axis
-                let matRotateX = new Matrix(4, 4);
-                CG.mat4x4RotateX(matRotateX, 0.5*delta_time/1000*2*Math.PI);
+                matTranslate.values = [[1, 0, 0, -model.center[0]],
+                [0, 1, 0, -model.center[1]],
+                [0, 0, 1, -model.center[2]],
+                [0, 0, 0, 1]];
+                                        
+                // rotate about specified axis
+                let matRotate = new Matrix(4, 4);
+                if (model.animation.axis === 'x') {
+                    CG.mat4x4RotateX(matRotate, model.animation.rps * time * Math.PI / 180);
+                } else if (model.animation.axis === 'y') {
+                    CG.mat4x4RotateY(matRotate, model.animation.rps * time * Math.PI / 180);
+                } else if (model.animation.axis === 'z') {
+                    CG.mat4x4RotateZ(matRotate, model.animation.rps * time * Math.PI / 180);
+                } else {
+                    throw new Error(`Model at index ${i} is invalid: "axis" must be x, y, or z, but value of ${model.animation.axis} was found.`);
+                }
                 
                 // translate back to the original location
                 let matTranslate_inv = matTranslate.inverse();
 
                 // put all together
-                let matRotate_generic = Matrix.multiply([matTranslate_inv, matRotateX, matTranslate]);
-
-                // modify vertices
-                for (let v = 0; v < this.scene.models[i].vertices.length; v++) {
-                    // cartesian -> homogeneous
-                    let homo_vertex = CG.Vector4(this.scene.models[i].vertices[v].x,
-                                                 this.scene.models[i].vertices[v].y,
-                                                 this.scene.models[i].vertices[v].z,
-                                                 1);
-                    // multiply
-                    let rotated_homo_vertex = Matrix.multiply([matRotate_generic, homo_vertex]);
-                    // homogeneous -> cartesian
-                    this.scene.models[i].vertices[v][0] = rotated_homo_vertex.x / rotated_homo_vertex.w;
-                    this.scene.models[i].vertices[v][1] = rotated_homo_vertex.y / rotated_homo_vertex.w;
-                    this.scene.models[i].vertices[v][2] = rotated_homo_vertex.z / rotated_homo_vertex.w;
-                    console.log(this.scene.models[i].vertices[v][0]);
-                }
+                this.scene.models[i].animation.transform = Matrix.multiply([matTranslate_inv, matRotate, matTranslate]);
             }
         }
     }
@@ -176,14 +166,23 @@ class Renderer {
         //     * translate/scale to viewport (i.e. window)
         //     * draw line
         for (const model of this.scene.models) {
+            // Perform animation transformation
+            let animVertices;
+            if (model.animation) {
+                animVertices = [];
+                model.vertices.forEach((vertex, i) => {
+                    animVertices[i] = Matrix.multiply([model.animation.transform, vertex]);
+                });
+            } else {
+                animVertices = model.vertices;
+            }
+            // Transform to canonical view volume
             const canonicalVertices = [];
-            //console.log(model.vertices);
-            //console.log(model);
-            model.vertices.forEach((vertex, i) => {
+            animVertices.forEach((vertex, i) => {
                 canonicalVertices[i] = Matrix.multiply([CG.mat4x4Perspective(this.scene.view.prp, this.scene.view.srp, this.scene.view.vup, this.scene.view.clip), vertex]);
             });
-            //console.log(canonicalVertices);
-            const z_min = -this.scene.view.clip[4]/this.scene.view.clip[5]; // TODO: define z_min
+
+            const z_min = -this.scene.view.clip[4]/this.scene.view.clip[5];
             for (const edge of model.edges) {
                 for (let i = 0; i < edge.length - 1; i++) {
                     const v0 = canonicalVertices[edge[i]];
@@ -367,9 +366,6 @@ class Renderer {
                                                    scene.models[i].vertices[j][1],
                                                    scene.models[i].vertices[j][2],
                                                    1));
-                    if (scene.models[i].hasOwnProperty('animation')) {
-                        model.animation = JSON.parse(JSON.stringify(scene.models[i].animation));
-                    }
                 }
             } else if (model.type === 'cube') {
                 const leftFaceX = scene.models[i].center[0] - scene.models[i].width / 2;
@@ -494,6 +490,15 @@ class Renderer {
                     if (scene.models[i].hasOwnProperty(key) && key !== 'type' && key != 'center') {
                         model[key] = JSON.parse(JSON.stringify(scene.models[i][key]));
                     }
+                }
+            }
+            if (scene.models[i].hasOwnProperty('animation')) {
+                model.animation = JSON.parse(JSON.stringify(scene.models[i].animation));
+                if (!scene.models[i].center) {
+                    console.warn(`Model at index ${i} has animation defined without a center to rotate about, so it will rotate about the origin.`);
+                    model.center = [0, 0, 0];
+                } else {
+                    model.center = scene.models[i].center;
                 }
             }
 
