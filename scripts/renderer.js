@@ -107,9 +107,6 @@ class Renderer {
         this.scene.view.srp.x = rotate_srp.x / rotate_srp.w;
         this.scene.view.srp.y = rotate_srp.y / rotate_srp.w;
         this.scene.view.srp.z = rotate_srp.z / rotate_srp.w;
-
-        // draw
-        this.draw();
     }
     
     //
@@ -120,7 +117,6 @@ class Renderer {
         u.normalize();
         this.scene.view.prp = this.scene.view.prp.subtract(u);
         this.scene.view.srp = this.scene.view.srp.subtract(u);
-        this.draw();
     }
     
     //
@@ -131,7 +127,6 @@ class Renderer {
         u.normalize();
         this.scene.view.prp = this.scene.view.prp.add(u);
         this.scene.view.srp = this.scene.view.srp.add(u);
-        this.draw();
     }
     
     //
@@ -140,7 +135,6 @@ class Renderer {
         n.normalize();
         this.scene.view.prp = this.scene.view.prp.add(n);
         this.scene.view.srp = this.scene.view.srp.add(n);
-        this.draw();
     }
     
     //
@@ -149,7 +143,6 @@ class Renderer {
         n.normalize();
         this.scene.view.prp = this.scene.view.prp.subtract(n);
         this.scene.view.srp = this.scene.view.srp.subtract(n);
-        this.draw();
     }
 
     //
