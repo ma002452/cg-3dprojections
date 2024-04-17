@@ -19,10 +19,14 @@
         },
         {
             "type": "cone",
-            "center": [0, 0, -20],
+            "center": [10, 20, -20],
             "radius": 4,
             "height": 8,
-            "sides": 16
+            "sides": 16,
+            "animation": {
+                "axis": "x",
+                "rps": 0.5
+            }
         },
         {
             "type": "cylinder",
