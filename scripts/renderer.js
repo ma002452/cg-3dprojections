@@ -148,22 +148,42 @@ class Renderer {
     
     //
     moveLeft() {
-        
+        let n = this.scene.view.prp.subtract(this.scene.view.srp);
+        n.normalize();
+        const u = this.scene.view.vup.cross(n);
+        u.normalize();
+        this.scene.view.prp = this.scene.view.prp.subtract(u);
+        this.scene.view.srp = this.scene.view.srp.subtract(u);
+        this.draw();
     }
     
     //
     moveRight() {
-
+        let n = this.scene.view.prp.subtract(this.scene.view.srp);
+        n.normalize();
+        const u = this.scene.view.vup.cross(n);
+        u.normalize();
+        this.scene.view.prp = this.scene.view.prp.add(u);
+        this.scene.view.srp = this.scene.view.srp.add(u);
+        this.draw();
     }
     
     //
     moveBackward() {
-
+        let n = this.scene.view.prp.subtract(this.scene.view.srp);
+        n.normalize();
+        this.scene.view.prp = this.scene.view.prp.add(n);
+        this.scene.view.srp = this.scene.view.srp.add(n);
+        this.draw();
     }
     
     //
     moveForward() {
-
+        let n = this.scene.view.prp.subtract(this.scene.view.srp);
+        n.normalize();
+        this.scene.view.prp = this.scene.view.prp.subtract(n);
+        this.scene.view.srp = this.scene.view.srp.subtract(n);
+        this.draw();
     }
 
     //
@@ -375,16 +395,121 @@ class Renderer {
                         model.animation = JSON.parse(JSON.stringify(scene.models[i].animation));
                     }
                 }
-            }
-            /*
-            else if (model.type === 'cube') {
-                model.vertices = [];
-                for (let i=0; i<8; i++) {
-                    model.vertices[i].push(CG.Vector4());
+            } else if (model.type === 'cube') {
+                const leftFaceX = scene.models[i].center[0] - scene.models[i].width / 2;
+                const rightFaceX = scene.models[i].center[0] + scene.models[i].width / 2;
+                const bottomFaceY = scene.models[i].center[1] - scene.models[i].height / 2;
+                const topFaceY = scene.models[i].center[1] + scene.models[i].height / 2;
+                const backFaceZ = scene.models[i].center[2] - scene.models[i].depth / 2;
+                const frontFaceZ = scene.models[i].center[2] + scene.models[i].depth / 2;
+                model.vertices = [
+                    CG.Vector4(rightFaceX, topFaceY, backFaceZ, 1),
+                    CG.Vector4(leftFaceX, topFaceY, backFaceZ, 1),
+                    CG.Vector4(leftFaceX, bottomFaceY, backFaceZ, 1),
+                    CG.Vector4(rightFaceX, bottomFaceY, backFaceZ, 1),
+                    CG.Vector4(rightFaceX, topFaceY, frontFaceZ, 1),
+                    CG.Vector4(leftFaceX, topFaceY, frontFaceZ, 1),
+                    CG.Vector4(leftFaceX, bottomFaceY, frontFaceZ, 1),
+                    CG.Vector4(rightFaceX, bottomFaceY, frontFaceZ, 1)
+                ];
+                model.edges = [
+                    [0, 1, 2, 3, 0], // back face
+                    [4, 5, 6, 7, 4], // front face
+                    [0, 4],          // connecting edges (side faces)
+                    [1, 5],
+                    [2, 6],
+                    [3, 7],
+                ];
+            } else if (model.type === 'cone') {
+                if (!Number.isInteger(scene.models[i].sides) || scene.models[i].sides < 3) {
+                    throw new Error(`Model at index ${i} is invalid: "sides" must be an integer >= 3, but value of ${scene.models[i].sides} was found.`);
                 }
+                // Tip
+                model.vertices = [
+                    CG.Vector4(
+                        scene.models[i].center[0],
+                        scene.models[i].height + scene.models[i].center[1],
+                        scene.models[i].center[2],
+                        1
+                    )
+                ];
+                // Base
+                model.edges = [[1]];
+                for (let b = 0; b < scene.models[i].sides; b++) {
+                    const angle = 2 * Math.PI * b / scene.models[i].sides;
+                    const x = scene.models[i].radius * Math.cos(angle) + scene.models[i].center[0];
+                    const z = scene.models[i].radius * Math.sin(angle) + scene.models[i].center[2];
+                    model.vertices.push(CG.Vector4(x, scene.models[i].center[1], z, 1));
+                    model.edges.push([0, b]); // base to tip
+                    model.edges[0].push((b + 1) % scene.models[i].sides + 1); // base perimeter
+                }
+            } else if (model.type === 'cylinder') {
+                if (!Number.isInteger(scene.models[i].sides) || scene.models[i].sides < 3) {
+                    throw new Error(`Model at index ${i} is invalid: "sides" must be an integer >= 3, but value of ${scene.models[i].sides} was found.`);
+                }
+                model.vertices = [];
+                model.edges = [[0], [scene.models[i].sides]];
+                // Bottom and top face
+                for (let f = 0; f <= 1; f++) {
+                    for (let v = 0; v < scene.models[i].sides; v++) {
+                        const angle = 2 * Math.PI * v / scene.models[i].sides;
+                        const x = scene.models[i].radius * Math.cos(angle) + scene.models[i].center[0];
+                        const y = scene.models[i].height * (f - 0.5) + scene.models[i].center[1];
+                        const z = scene.models[i].radius * Math.sin(angle) + scene.models[i].center[2];
+                        model.vertices.push(CG.Vector4(x, y, z, 1));
+                        model.edges[f].push((v + 1) % scene.models[i].sides + f * scene.models[i].sides); // face perimeter
+                        if (f == 0) {
+                            model.edges.push([v, v + scene.models[i].sides]); // connections to other face
+                        }
+                    }
+                }
+            } else if (model.type === 'sphere') {
+                if (this.isSideCountInvalid(scene.models[i].slices, 3)) {
+                    throw new Error(`Model at index ${i} is invalid: "slices" must be an integer >= 3, but value of ${scene.models[i].slices} was found.`);
+                } else if (this.isSideCountInvalid(scene.models[i].stacks, 2)) {
+                    throw new Error(`Model at index ${i} is invalid: "stacks" must be an integer >= 2, but value of ${scene.models[i].stacks} was found.`);
+                }
+                model.vertices = [];
+                model.edges = [[0]];
+                // Bottom vertex
+                model.vertices.push(CG.Vector4(
+                    scene.models[i].center[0],
+                    -scene.models[i].radius + scene.models[i].center[1],
+                    scene.models[i].center[2],
+                    1
+                ));
+                // Stack rings
+                for (let stack = 1; stack < scene.models[i].stacks; stack++) {
+                    const stackAngle = Math.PI * stack / scene.models[i].stacks;
+                    const stackRadius = scene.models[i].radius * Math.sin(stackAngle);
+                    model.edges.push([(stack - 1) * scene.models[i].stacks + 1]);
+                    for (let v = 0; v < scene.models[i].slices; v++) {
+                        const angle = 2 * Math.PI * v / scene.models[i].slices;
+                        const x = stackRadius * Math.cos(angle) + scene.models[i].center[0];
+                        const y = scene.models[i].radius * Math.cos(stackAngle - Math.PI) + scene.models[i].center[1];
+                        const z = stackRadius * Math.sin(angle) + scene.models[i].center[2];
+                        model.vertices.push(CG.Vector4(x, y, z, 1));
 
-            }*/
-            else {
+                        if (stack == 1) {
+                            model.edges.push([0, v + 1]); // connections to bottom vertex
+                        }
+                        const vIndex = v + (stack - 1) * scene.models[i].slices + 1;
+                        model.edges.push([vIndex, (v + 1) % scene.models[i].slices + (stack - 1) * scene.models[i].slices + 1]); // stack perimeter
+                        if (stack == scene.models[i].stacks - 1) {
+                            model.edges.push([vIndex, scene.models[i].slices * (scene.models[i].stacks - 1) + 1]); // connections to top vertex
+                        } else {
+                            model.edges.push([vIndex, vIndex + scene.models[i].slices]); // connections to next stack
+                        }
+                    }
+                }
+                // Top vertex
+                model.vertices.push(CG.Vector4(
+                    scene.models[i].center[0],
+                    scene.models[i].radius + scene.models[i].center[1],
+                    scene.models[i].center[2],
+                    1
+                ));
+            } else {
                 model.center = CG.Vector4(scene.models[i].center[0],
                                        scene.models[i].center[1],
                                        scene.models[i].center[2],
@@ -401,6 +526,10 @@ class Renderer {
         }
 
         return processed;
+    }
+
+    isSideCountInvalid(sides, min) {
+        return !Number.isInteger(sides) || sides < min;
     }
     
     // x0:           float (x coordinate of p0)
