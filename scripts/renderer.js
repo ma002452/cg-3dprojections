@@ -52,7 +52,6 @@ class Renderer {
 
                 // put all together
                 model.animation.transform = Matrix.multiply([matTranslate_inv, matRotate, matTranslate]);
-                console.log(model.animation.transform);
             }
         }
     }
@@ -192,7 +191,6 @@ class Renderer {
                         pt0: CG.Vector4(v0.x, v0.y, v0.z, 1),
                         pt1: CG.Vector4(v1.x, v1.y, v1.z, 1)
                     };
-                    //console.log(line);
                     const clippedLine = this.clipLinePerspective(line, z_min);
 
                     if (clippedLine != null) {

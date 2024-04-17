@@ -80,7 +80,12 @@ let initial_scene = {
                 [2, 7],
                 [3, 8],
                 [4, 9]
-            ]
+            ],
+            animation: {
+                axis: "x",
+                rps: 0.5
+            },
+            center: [10, 10, -45]
         }
     ]
 };
