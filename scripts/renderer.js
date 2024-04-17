@@ -27,13 +27,13 @@ class Renderer {
     updateTransforms(time, delta_time) {
         for (let i = 0; i < this.scene.models.length; i++) {
             const model = this.scene.models[i];
-            if (model.animation) {
+            if (model.hasOwnProperty('animation')) {
                 // translate model center to origin
                 let matTranslate = new Matrix(4, 4);
                 matTranslate.values = [[1, 0, 0, -model.center[0]],
-                [0, 1, 0, -model.center[1]],
-                [0, 0, 1, -model.center[2]],
-                [0, 0, 0, 1]];
+                                       [0, 1, 0, -model.center[1]],
+                                       [0, 0, 1, -model.center[2]],
+                                       [0, 0, 0, 1]];
                                         
                 // rotate about specified axis
                 let matRotate = new Matrix(4, 4);
@@ -51,7 +51,8 @@ class Renderer {
                 let matTranslate_inv = matTranslate.inverse();
 
                 // put all together
-                this.scene.models[i].animation.transform = Matrix.multiply([matTranslate_inv, matRotate, matTranslate]);
+                model.animation.transform = Matrix.multiply([matTranslate_inv, matRotate, matTranslate]);
+                console.log(model.animation.transform);
             }
         }
     }
@@ -168,7 +169,7 @@ class Renderer {
         for (const model of this.scene.models) {
             // Perform animation transformation
             let animVertices;
-            if (model.animation) {
+            if (model.hasOwnProperty('animation')) {
                 animVertices = [];
                 model.vertices.forEach((vertex, i) => {
                     animVertices[i] = Matrix.multiply([model.animation.transform, vertex]);
