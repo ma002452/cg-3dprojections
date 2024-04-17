@@ -38,11 +38,11 @@ class Renderer {
                 // rotate about specified axis
                 let matRotate = new Matrix(4, 4);
                 if (model.animation.axis === 'x') {
-                    CG.mat4x4RotateX(matRotate, model.animation.rps * time * Math.PI / 180);
+                    CG.mat4x4RotateX(matRotate, model.animation.rps * time / 1000 * (2 * Math.PI));
                 } else if (model.animation.axis === 'y') {
-                    CG.mat4x4RotateY(matRotate, model.animation.rps * time * Math.PI / 180);
+                    CG.mat4x4RotateY(matRotate, model.animation.rps * time / 1000 * (2 * Math.PI));
                 } else if (model.animation.axis === 'z') {
-                    CG.mat4x4RotateZ(matRotate, model.animation.rps * time * Math.PI / 180);
+                    CG.mat4x4RotateZ(matRotate, model.animation.rps * time / 1000 * (2 * Math.PI));
                 } else {
                     throw new Error(`Model at index ${i} is invalid: "axis" must be x, y, or z, but value of ${model.animation.axis} was found.`);
                 }
