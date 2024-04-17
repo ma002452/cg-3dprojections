@@ -18,7 +18,7 @@ class Renderer {
         this.canvas.height = canvas.height;
         this.ctx = this.canvas.getContext('2d');
         this.scene = this.processScene(scene);
-        this.enable_animation = false;  // <-- disabled for easier debugging; enable for animation
+        this.enable_animation = true;  // <-- disabled for easier debugging; enable for animation
         this.start_time = null;
         this.prev_time = null;
     }
@@ -27,27 +27,43 @@ class Renderer {
     updateTransforms(time, delta_time) {
         // TODO: update any transformations needed for animation
         
-        // model1 (rotate about its own x-axis)
-        // translate PRP to origin
-        let matTranslate = new Matrix(4, 4);
-        matTranslate.values = [[1, 0, 0, -this.scene.view.prp.x],
-                               [0, 1, 0, -this.scene.view.prp.y],
-                               [0, 0, 1, -this.scene.view.prp.z],
-                               [0, 0, 0,                      1]];
+        for (let i = 0; i < this.scene.models.length; i++) {
+            let model = { type: this.scene.models[i].type };
+            if (model.type === 'generic') {
+                // translate PRP to origin
+                let matTranslate = new Matrix(4, 4);
+                matTranslate.values = [[1, 0, 0, -this.scene.view.prp.x],
+                                       [0, 1, 0, -this.scene.view.prp.y],
+                                       [0, 0, 1, -this.scene.view.prp.z],
+                                       [0, 0, 0,                      1]];
+                                       
+                // rotate about x-axis
+                let matRotateX = new Matrix(4, 4);
+                CG.mat4x4RotateX(matRotateX, 0.5*delta_time/1000*2*Math.PI);
+                
+                // translate back to the original location
+                let matTranslate_inv = matTranslate.inverse();
 
-        // rotate about x-axis
-        let matRotateX = new Matrix(4, 4);
-        CG.mat4x4RotateX(matRotateX, this.scene.models[0].rps*delta_time);
+                // put all together
+                let matRotate_generic = Matrix.multiply([matTranslate_inv, matRotateX, matTranslate]);
 
-        // go back to the original location
-        let matRotate_inv = matRotate.inverse();
-        let matTranslate_inv = matTranslate.inverse();
-
-        // put all together
-        let matRotateLeft = Matrix.multiply([matTranslate_inv, matRotate_inv, matRotateV, matRotate, matTranslate]);
-
-        // multiply matRotateLeft with every vertex of the model
-        //
+                // modify vertices
+                for (let v = 0; v < this.scene.models[i].vertices.length; v++) {
+                    // cartesian -> homogeneous
+                    let homo_vertex = CG.Vector4(this.scene.models[i].vertices[v].x,
+                                                 this.scene.models[i].vertices[v].y,
+                                                 this.scene.models[i].vertices[v].z,
+                                                 1);
+                    // multiply
+                    let rotated_homo_vertex = Matrix.multiply([matRotate_generic, homo_vertex]);
+                    // homogeneous -> cartesian
+                    this.scene.models[i].vertices[v][0] = rotated_homo_vertex.x / rotated_homo_vertex.w;
+                    this.scene.models[i].vertices[v][1] = rotated_homo_vertex.y / rotated_homo_vertex.w;
+                    this.scene.models[i].vertices[v][2] = rotated_homo_vertex.z / rotated_homo_vertex.w;
+                    console.log(this.scene.models[i].vertices[v][0]);
+                }
+            }
+        }
     }
 
     //
@@ -87,14 +103,13 @@ class Renderer {
 
         // rotate srp
         let rotate_srp = Matrix.multiply([matRotateLeft, homo_srp]);
-        console.log(rotate_srp);
         
         // homogeneous srp -> cartesian srp
         this.scene.view.srp.x = rotate_srp.x / rotate_srp.w;
         this.scene.view.srp.y = rotate_srp.y / rotate_srp.w;
         this.scene.view.srp.z = rotate_srp.z / rotate_srp.w;
-        console.log(this.scene.view.srp);
 
+        // draw
         this.draw();
     }
     
@@ -135,14 +150,13 @@ class Renderer {
 
         // rotate srp
         let rotate_srp = Matrix.multiply([matRotateLeft, homo_srp]);
-        console.log(rotate_srp);
         
         // homogeneous srp -> cartesian srp
         this.scene.view.srp.x = rotate_srp.x / rotate_srp.w;
         this.scene.view.srp.y = rotate_srp.y / rotate_srp.w;
         this.scene.view.srp.z = rotate_srp.z / rotate_srp.w;
-        console.log(this.scene.view.srp);
 
+        // draw
         this.draw();
     }
     
