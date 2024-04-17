@@ -421,6 +421,26 @@ class Renderer {
                     model.edges.push([0, b]); // base to tip
                     model.edges[0].push((b + 1) % scene.models[i].sides + 1); // base perimeter
                 }
+            } else if (model.type === 'cylinder') {
+                if (!Number.isInteger(scene.models[i].sides) || scene.models[i].sides < 3) {
+                    throw new Error(`Model at index ${i} is invalid: "sides" must be an integer >= 3, but value of ${scene.models[i].sides} was found.`);
+                }
+                model.vertices = [];
+                model.edges = [[0], [scene.models[i].sides]];
+                // Bottom and top face
+                for (let f = 0; f <= 1; f++) {
+                    for (let v = 0; v < scene.models[i].sides; v++) {
+                        const angle = 2 * Math.PI * v / scene.models[i].sides;
+                        const x = scene.models[i].radius * Math.cos(angle) + scene.models[i].center[0];
+                        const y = scene.models[i].height * (f - 0.5) + scene.models[i].center[1];
+                        const z = scene.models[i].radius * Math.sin(angle) + scene.models[i].center[2];
+                        model.vertices.push(CG.Vector4(x, y, z, 1));
+                        model.edges[f].push((v + 1) % scene.models[i].sides + f * scene.models[i].sides); // face perimeter
+                        if (f == 0) {
+                            model.edges.push([v, v + scene.models[i].sides]); // connections to other face
+                        }
+                    }
+                }
             } else {
                 model.center = CG.Vector4(scene.models[i].center[0],
                                        scene.models[i].center[1],
