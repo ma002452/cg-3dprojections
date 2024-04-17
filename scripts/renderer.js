@@ -471,8 +471,8 @@ class Renderer {
                         if (stack == 1) {
                             model.edges.push([0, v + 1]); // connections to bottom vertex
                         }
-                        const vIndex = v + (stack - 1) * scene.models[i].stacks + 1;
-                        model.edges.push([vIndex, (v + 1) % scene.models[i].slices + (stack - 1) * scene.models[i].stacks + 1]); // stack perimeter
+                        const vIndex = v + (stack - 1) * scene.models[i].slices + 1;
+                        model.edges.push([vIndex, (v + 1) % scene.models[i].slices + (stack - 1) * scene.models[i].slices + 1]); // stack perimeter
                         if (stack == scene.models[i].stacks - 1) {
                             model.edges.push([vIndex, scene.models[i].slices * (scene.models[i].stacks - 1) + 1]); // connections to top vertex
                         } else {
