@@ -398,6 +398,29 @@ class Renderer {
                     [2, 6],
                     [3, 7],
                 ];
+            } else if (model.type === 'cone') {
+                if (!Number.isInteger(scene.models[i].sides) || scene.models[i].sides < 3) {
+                    throw new Error(`Model at index ${i} is invalid: "sides" must be an integer >= 3, but value of ${scene.models[i].sides} was found.`);
+                }
+                // Tip
+                model.vertices = [
+                    CG.Vector4(
+                        scene.models[i].center[0],
+                        scene.models[i].height + scene.models[i].center[1],
+                        scene.models[i].center[2],
+                        1
+                    )
+                ];
+                // Base
+                model.edges = [[1]];
+                for (let b = 0; b < scene.models[i].sides; b++) {
+                    const angle = 2 * Math.PI * b / scene.models[i].sides;
+                    const x = scene.models[i].radius * Math.cos(angle) + scene.models[i].center[0];
+                    const z = scene.models[i].radius * Math.sin(angle) + scene.models[i].center[2];
+                    model.vertices.push(CG.Vector4(x, scene.models[i].center[1], z, 1));
+                    model.edges.push([0, b]); // base to tip
+                    model.edges[0].push((b + 1) % scene.models[i].sides + 1); // base perimeter
+                }
             } else {
                 model.center = CG.Vector4(scene.models[i].center[0],
                                        scene.models[i].center[1],
