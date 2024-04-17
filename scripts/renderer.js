@@ -26,102 +26,124 @@ class Renderer {
     //
     updateTransforms(time, delta_time) {
         // TODO: update any transformations needed for animation
+        
+        // model1 (rotate about its own x-axis)
+        // translate PRP to origin
+        let matTranslate = new Matrix(4, 4);
+        matTranslate.values = [[1, 0, 0, -this.scene.view.prp.x],
+                               [0, 1, 0, -this.scene.view.prp.y],
+                               [0, 0, 1, -this.scene.view.prp.z],
+                               [0, 0, 0,                      1]];
+
+        // rotate about x-axis
+        let matRotateX = new Matrix(4, 4);
+        CG.mat4x4RotateX(matRotateX, this.scene.models[0].rps*delta_time);
+
+        // go back to the original location
+        let matRotate_inv = matRotate.inverse();
+        let matTranslate_inv = matTranslate.inverse();
+
+        // put all together
+        let matRotateLeft = Matrix.multiply([matTranslate_inv, matRotate_inv, matRotateV, matRotate, matTranslate]);
+
+        // multiply matRotateLeft with every vertex of the model
+        //
     }
 
     //
     rotateLeft() {
-    // translate PRP to origin
-    let matTranslate = new Matrix(4, 4);
-    matTranslate.values = [[1, 0, 0, -this.scene.view.prp.x],
-                           [0, 1, 0, -this.scene.view.prp.y],
-                           [0, 0, 1, -this.scene.view.prp.z],
-                           [0, 0, 0,                      1]];
+        // translate PRP to origin
+        let matTranslate = new Matrix(4, 4);
+        matTranslate.values = [[1, 0, 0, -this.scene.view.prp.x],
+                               [0, 1, 0, -this.scene.view.prp.y],
+                               [0, 0, 1, -this.scene.view.prp.z],
+                               [0, 0, 0,                      1]];
 
-    // rotate VRC such that (u,v,n) align with (x,y,z)
-    let n = this.scene.view.prp.subtract(this.scene.view.srp);
-    n.normalize();
-    let u = this.scene.view.vup.cross(n);
-    u.normalize();
-    let v = n.cross(u);
-    let matRotate = new Matrix(4, 4);
-    matRotate.values = [[u.x, u.y, u.z, 0],
-                        [v.x, v.y, v.z, 0],
-                        [n.x, n.y, n.z, 0],
-                        [  0,   0,   0, 1]];
+        // rotate VRC such that (u,v,n) align with (x,y,z)
+        let n = this.scene.view.prp.subtract(this.scene.view.srp);
+        n.normalize();
+        let u = this.scene.view.vup.cross(n);
+        u.normalize();
+        let v = n.cross(u);
+        let matRotate = new Matrix(4, 4);
+        matRotate.values = [[u.x, u.y, u.z, 0],
+                            [v.x, v.y, v.z, 0],
+                            [n.x, n.y, n.z, 0],
+                            [  0,   0,   0, 1]];
 
-    // rotation matrix around the v-axis with the PRP as the origin
-    let matRotateV = new Matrix(4, 4);
-    CG.mat4x4RotateY(matRotateV, 15*Math.PI/180);
+        // rotation matrix around the v-axis with the PRP as the origin
+        let matRotateV = new Matrix(4, 4);
+        CG.mat4x4RotateY(matRotateV, 15*Math.PI/180);
 
-    // go back to the original location
-    let matRotate_inv = matRotate.inverse();
-    let matTranslate_inv = matTranslate.inverse();
+        // go back to the original location
+        let matRotate_inv = matRotate.inverse();
+        let matTranslate_inv = matTranslate.inverse();
 
-    // put all together
-    let matRotateLeft = Matrix.multiply([matTranslate_inv, matRotate_inv, matRotateV, matRotate, matTranslate]);
+        // put all together
+        let matRotateLeft = Matrix.multiply([matTranslate_inv, matRotate_inv, matRotateV, matRotate, matTranslate]);
 
-    // cartesian srp -> homogeneous srp
-    let homo_srp = CG.Vector4(this.scene.view.srp.x, this.scene.view.srp.y, this.scene.view.srp.z, 1);
+        // cartesian srp -> homogeneous srp
+        let homo_srp = CG.Vector4(this.scene.view.srp.x, this.scene.view.srp.y, this.scene.view.srp.z, 1);
 
-    // rotate srp
-    let rotate_srp = Matrix.multiply([matRotateLeft, homo_srp]);
-    console.log(rotate_srp);
-    
-    // homogeneous srp -> cartesian srp
-    this.scene.view.srp.x = rotate_srp.x / rotate_srp.w;
-    this.scene.view.srp.y = rotate_srp.y / rotate_srp.w;
-    this.scene.view.srp.z = rotate_srp.z / rotate_srp.w;
-    console.log(this.scene.view.srp);
+        // rotate srp
+        let rotate_srp = Matrix.multiply([matRotateLeft, homo_srp]);
+        console.log(rotate_srp);
+        
+        // homogeneous srp -> cartesian srp
+        this.scene.view.srp.x = rotate_srp.x / rotate_srp.w;
+        this.scene.view.srp.y = rotate_srp.y / rotate_srp.w;
+        this.scene.view.srp.z = rotate_srp.z / rotate_srp.w;
+        console.log(this.scene.view.srp);
 
-    this.draw();
+        this.draw();
     }
     
     //
     rotateRight() {
-    // translate PRP to origin
-    let matTranslate = new Matrix(4, 4);
-    matTranslate.values = [[1, 0, 0, -this.scene.view.prp.x],
-                           [0, 1, 0, -this.scene.view.prp.y],
-                           [0, 0, 1, -this.scene.view.prp.z],
-                           [0, 0, 0,                      1]];
+        // translate PRP to origin
+        let matTranslate = new Matrix(4, 4);
+        matTranslate.values = [[1, 0, 0, -this.scene.view.prp.x],
+                               [0, 1, 0, -this.scene.view.prp.y],
+                               [0, 0, 1, -this.scene.view.prp.z],
+                               [0, 0, 0,                      1]];
 
-    // rotate VRC such that (u,v,n) align with (x,y,z)
-    let n = this.scene.view.prp.subtract(this.scene.view.srp);
-    n.normalize();
-    let u = this.scene.view.vup.cross(n);
-    u.normalize();
-    let v = n.cross(u);
-    let matRotate = new Matrix(4, 4);
-    matRotate.values = [[u.x, u.y, u.z, 0],
-                        [v.x, v.y, v.z, 0],
-                        [n.x, n.y, n.z, 0],
-                        [  0,   0,   0, 1]];
+        // rotate VRC such that (u,v,n) align with (x,y,z)
+        let n = this.scene.view.prp.subtract(this.scene.view.srp);
+        n.normalize();
+        let u = this.scene.view.vup.cross(n);
+        u.normalize();
+        let v = n.cross(u);
+        let matRotate = new Matrix(4, 4);
+        matRotate.values = [[u.x, u.y, u.z, 0],
+                            [v.x, v.y, v.z, 0],
+                            [n.x, n.y, n.z, 0],
+                            [  0,   0,   0, 1]];
 
-    // rotation matrix around the v-axis with the PRP as the origin
-    let matRotateV = new Matrix(4, 4);
-    CG.mat4x4RotateY(matRotateV, -15*Math.PI/180);
+        // rotation matrix around the v-axis with the PRP as the origin
+        let matRotateV = new Matrix(4, 4);
+        CG.mat4x4RotateY(matRotateV, -15*Math.PI/180);
 
-    // go back to the original location
-    let matRotate_inv = matRotate.inverse();
-    let matTranslate_inv = matTranslate.inverse();
+        // go back to the original location
+        let matRotate_inv = matRotate.inverse();
+        let matTranslate_inv = matTranslate.inverse();
 
-    // put all together
-    let matRotateLeft = Matrix.multiply([matTranslate_inv, matRotate_inv, matRotateV, matRotate, matTranslate]);
+        // put all together
+        let matRotateLeft = Matrix.multiply([matTranslate_inv, matRotate_inv, matRotateV, matRotate, matTranslate]);
 
-    // cartesian srp -> homogeneous srp
-    let homo_srp = CG.Vector4(this.scene.view.srp.x, this.scene.view.srp.y, this.scene.view.srp.z, 1);
+        // cartesian srp -> homogeneous srp
+        let homo_srp = CG.Vector4(this.scene.view.srp.x, this.scene.view.srp.y, this.scene.view.srp.z, 1);
 
-    // rotate srp
-    let rotate_srp = Matrix.multiply([matRotateLeft, homo_srp]);
-    console.log(rotate_srp);
-    
-    // homogeneous srp -> cartesian srp
-    this.scene.view.srp.x = rotate_srp.x / rotate_srp.w;
-    this.scene.view.srp.y = rotate_srp.y / rotate_srp.w;
-    this.scene.view.srp.z = rotate_srp.z / rotate_srp.w;
-    console.log(this.scene.view.srp);
+        // rotate srp
+        let rotate_srp = Matrix.multiply([matRotateLeft, homo_srp]);
+        console.log(rotate_srp);
+        
+        // homogeneous srp -> cartesian srp
+        this.scene.view.srp.x = rotate_srp.x / rotate_srp.w;
+        this.scene.view.srp.y = rotate_srp.y / rotate_srp.w;
+        this.scene.view.srp.z = rotate_srp.z / rotate_srp.w;
+        console.log(this.scene.view.srp);
 
-    this.draw();
+        this.draw();
     }
     
     //
