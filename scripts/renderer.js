@@ -165,6 +165,10 @@ class Renderer {
                 animVertices = [];
                 model.vertices.forEach((vertex, i) => {
                     animVertices[i] = Matrix.multiply([model.animation.transform, vertex]);
+                    animVertices[i].x /= animVertices[i].w;
+                    animVertices[i].y /= animVertices[i].w;
+                    animVertices[i].z /= animVertices[i].w;
+                    animVertices[i].w = 1;
                 });
             } else {
                 animVertices = model.vertices;
